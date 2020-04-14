@@ -152,3 +152,64 @@
           then, sum all the terms within the pseudo header.
 
           next, sum the result with all of the terms in the tcp message, take one's complement, and verify checksum.
+
+6. Know the operation and states of the TCP state machine - states created strictly from server transactions
+- CLOSED: machine is off or port is not supported
+
+- LISTEN: machine is listening to traffic on specific port. Once SYN is received, machine replies with SYN/ACK and moves to SYN RCVD state.
+
+- SYN RCVD: machine awaits an ack to establish connection. Once ACK is received, machine moves to CONNECTION ESTABLISHED state.
+
+- ESTABLISHED: messages are sent between client and server with each replying with ACKs to verify reception of data. If FIN is received,ACK is sent and state moves to CLOSEWAIT state.
+
+- CLOSEWAIT: machine sends FIN and moves to the LAST ACK state.
+
+- LAST ACK: machine waits for the last ACK to be received by client. Upon reception, the connection closes. 
+
+8. Understand the MQTT protocol and the operation of connect, disconnect, publish, and subscribe messages.
+![conn](connect.png)
+![connack](connack.png)
+![sub](sub.png)
+![suback](suback.png)
+![pub](pub.png)
+![disconnect](disconnect.png)
+
+For further reference: 
+[MQTT Standard](http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/mqtt-v3.1.1.html "MQTT standard")
+
+9. Understand MQTT QoS and message flow
+- **QoS 0**: oneshot message with no guarantee of delivery. Examples:
+     - SUBSCRIBE (no subsequent SUBACK)
+     - PUBLISH   (no subsequent PUBACK)
+
+- **QoS 1**: message sent *at least* once with guaranteed delivery. Example flows:
+     - Client -> PUBLISH -> Broker
+     - Client <- PUBACK  <- Broker
+
+- **QoS 2**: message sent once with guaranteed delivery. Example flow:
+     - Client -> PUBLISH -> Broker
+     - Client <- PUBRECV -> Broker
+     - Client -> PUBREL  -> Broker
+     - Client <- PUBCOMP <- Broker
+
+11. Understand the operation of the ENC28J60 Ethernet device and the code in the provided library.
+- Ethernet device has four banks in the control register memory space. Bank is selected via bits 1:0 in ECON1 register
+     - Details about the control registers are located [here](http://ww1.microchip.com/downloads/en/DeviceDoc/39662a.pdf). Check chapter 3.
+     - Several pointers exist to refer to different parts of the address space. 
+          - ETXSTH:ETXSTL refer to the start of the transmit buffer
+          - ETXNDH:ETXNDL refer to the end of the transmit buffer
+          - EWRPTL:EWRPTH refer to the pointers that access the DMA controller to write to the RAM.
+          - ETXWRPTL:ETXWRPTH refer to the hardware memory pointers for writing to transmit buffer
+______
+          - ERXSTH:ETXSTL refer to the start of the receive buffer
+          - ERXNDH:ERXNDL refer to the end of the receive buffer
+          - ERDPTH:ERDPTL refer to the pointers that access the DMA controller to read from RAM
+          - ERXRDPTL:ERXRDPTH refer to the hardware memory pointers for reading receive buffer
+
+     - Remember, to write to SPI bus, you must do a dummy read. To read to SPI bus, you must do a dummy write.
+
+- The ethernet buffer stores received packets and packets to transfer. The size of the buffer is 8 KiB - the bottom 6.5 KiB is reserved for the received packets while the upper 1.5 KiB is reserved for the packets to transfer.
+
+- The PHY registers act as the MAC API to control the physical characteristics of the controller (like the LEDs). 
+
+- The operation of the controller is based on polling (that is, checking if registers have been written to).
