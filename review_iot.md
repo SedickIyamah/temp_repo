@@ -206,10 +206,30 @@ ______
           - ERDPTH:ERDPTL refer to the pointers that access the DMA controller to read from RAM
           - ERXRDPTL:ERXRDPTH refer to the hardware memory pointers for reading receive buffer
 
-     - Remember, to write to SPI bus, you must do a dummy read. To read to SPI bus, you must do a dummy write.
+     - Remember, to write to SPI bus, you must do a dummy read. To read to SPI bus, you must do a dummy write. 
+
+     - To R/W from/to ethernet controller, Ctrl+F -> SPI Instruction Set
 
 - The ethernet buffer stores received packets and packets to transfer. The size of the buffer is 8 KiB - the bottom 6.5 KiB is reserved for the received packets while the upper 1.5 KiB is reserved for the packets to transfer.
 
 - The PHY registers act as the MAC API to control the physical characteristics of the controller (like the LEDs). 
 
 - The operation of the controller is based on polling (that is, checking if registers have been written to).
+
+- Steps for reading PHY:
+
+1. Write the address of the PHY register to read from into the MIREGADR register.
+
+2. Set the MICMD.MIIRD bit. The read operation begins and the MISTAT.BUSY bit is set.
+
+3. Wait 10.24 µs. Poll the MISTAT.BUSY bit to be certain that the operation is complete. While busy, the host controller should not start any MIISCAN operations or write to the MIWRH register. When the MAC has obtained the register contents, the BUSY bit will clear itself.
+
+4. Clear the MICMD.MIIRD bit.
+
+5. Read the desired data from the MIRDL and MIRDH registers. The order that these bytes are accessed is unimportant.
+
+- Steps for writing PHY:
+
+1. Write the address of the PHY register to write to into the MIREGADR register.
+2. Write the lower 8 bits of data to write into the MIWRL register.
+3. Write the upper 8 bits of data to write into the MIWRH register. Writing to this register automatically begins the MII transaction, so it must be written to after MIWRL. The MISTAT.BUSY bit becomes set.
